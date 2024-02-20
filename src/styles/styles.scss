@@ -1,0 +1,176 @@
+
+
+body, html{
+    margin: 0;
+    padding: 0;
+    font-family: 'Dosis', sans-serif;
+    font-weight: 200;
+    // background-color: #f5f5f5;
+    background-color: rgb(64, 64, 64);
+    
+}
+*{
+    color: white;
+}
+
+.html3d{
+    position: fixed;
+    max-width: 500px;
+    width: 60vw;
+    // background-color: rgb(64, 64, 64);
+    border-radius: 1vw;
+    // box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.3);
+}
+.html3d *{
+    color: rgb(255, 255, 255);
+}
+.text-container{
+    text-align: center;
+    padding: 3%;
+}
+
+.text-container>p{
+    margin: 0;
+    padding: 0;
+    font-size: 100%;
+}
+.text-container>h1{
+    margin: 0;
+    padding: 0;
+    font-size: 200%;
+}
+.text-container>h2{
+    margin: 0;
+    padding: 0;
+    font-size: 150%;
+}
+
+#threejs{
+    position: fixed;
+    z-index: -1;
+    top: 0;
+    left: 0;
+}
+
+
+h1{
+    font-family: 'Abril Fatface', sans-serif;
+    font-weight: 2;
+    font-size: 64px;
+    margin: 10px 0;
+
+}
+h2{
+    font-size: 48px;
+    font-weight: 200;
+    margin: 5px 0;
+
+}
+
+p{
+    font-size: 24px;
+    font-weight: 200;
+
+    text-align: justify;
+
+}
+
+.big{
+    font-size: 80px !important;
+}
+
+canvas{
+    background-image: 
+        linear-gradient(
+            rgb(152, 195, 255), 
+            rgb(214, 180, 92), 
+        );
+            
+}
+
+#front-page{
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+}
+
+#header{
+    position: relative;
+    height: 60px;
+    background-color: rgb(64, 64, 64);
+    width: 90%;
+    display: flex;
+    justify-content: right;
+    align-items: center;
+
+    padding: 0 5%;
+
+    font-weight: bold;
+    font-size: 25px;
+}
+
+#header .spacer{
+    flex-grow: 1;
+}
+
+#header a{
+    border: white 2px solid;
+    border-radius: 5px;
+    padding: 0.2% 2%;
+    margin: 0 1%;
+    text-decoration: none;
+}
+a:hover{
+    background-color: white;
+    color: black;
+}
+.canvas{
+    width: 100%;
+    height: 45vh;
+    opacity: 0.5;
+}
+#content{
+    width: 100%;
+    height: 55vh;
+    
+    background-color: rgb(64, 64, 64);
+
+    position: relative;
+    display: flex;
+    justify-content: center;
+
+    clip-path: polygon(0% 20%, 100% 0%, 100% 100%, 0% 100%)
+
+
+}
+
+.container{
+    max-width: 1000px;
+    padding-top: 10vh;
+}
+.container p{
+    margin: 0;
+    padding: 0;
+    font-size: 120%;
+} 
+.container h1{
+    font-size: 300%;
+}
+.page{
+    width: 96%;
+    margin: 2%;
+}
+.page>span{
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    align-items: start;
+}
+.page>span>*{
+    width: 49%;
+}
+
+
+
+
