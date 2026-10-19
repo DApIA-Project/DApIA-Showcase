@@ -8,6 +8,13 @@
     <!-- CSS -->
     <link rel="stylesheet" href="./styles/styles.scss" />
 
+    <link rel="stylesheet" type="text/css" media="all and (max-width: 799px) and (max-height: 799px) and (max-aspect-ratio:3/2)" href="./styles/styles_small_w.scss"/>
+    <link rel="stylesheet" type="text/css" media="all and (max-width: 799px) and (max-height: 799px) and (min-aspect-ratio:3/2)" href="./styles/styles_small_h.scss"/>
+    <link rel="stylesheet" type="text/css" media="all and (min-width: 800px) and (max-height: 799px) and (max-aspect-ratio:8/10), all and (min-height: 800px) and (max-width: 799px) and (max-aspect-ratio:8/10)" href="./styles/styles_small_w.scss"/>
+    <link rel="stylesheet" type="text/css" media="all and (min-width: 800px) and (max-height: 799px) and (min-aspect-ratio:8/10) and (max-aspect-ratio:4/3), all and (min-height: 800px) and (max-width: 799px) and (min-aspect-ratio:8/10) and (max-aspect-ratio:4/3)" href="./styles/styles_big.scss"/>
+    <link rel="stylesheet" type="text/css" media="all and (min-width: 800px) and (max-height: 799px) and (min-aspect-ratio:4/3), all and (min-height: 800px) and (max-width: 799px) and (min-aspect-ratio:4/3)" href="./styles/styles_small_h.scss"/>
+    <link rel="stylesheet" type="text/css" media="all and (min-width: 800px) and (min-height: 800px)" href="./styles/styles_big.scss"   />
+
     <!-- material icon font -->
     <link href="https://fonts.googleapis.com/css?family=Material+Icons|Material+Icons+Outlined|Material+Icons+Two+Tone|Material+Icons+Round|Material+Icons+Sharp" rel="stylesheet">
 
@@ -15,7 +22,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Dosis:wght@200..800&display=swap" rel="stylesheet">
 
-    <title>Document</title>
+    <link rel="icon" href="./assets/icao.png" type="image/x-icon" />
+
+    <title>DApIA</title>
 </head>
 <body>
     <script type="module" src="./script/index.ts"></script>
@@ -24,7 +33,7 @@
             <span> DAPIA </span>
             <div class="spacer"></div>
             <a href="https://github.com/DApIA-Project" target=”_blank”> GitHub </a> 
-            <a> Contact </a>
+            <a href="mailto:aymeric.cretin@smartesting.com"> Contact </a>
         </div>
 
 
@@ -35,41 +44,43 @@
         <div id="content" style="top:0px">
             <div class="container">
                 <div class="page"> 
-                    <h1> Super titre qui tue </h1>
-                    <span>
+                    <div class="split">
                         <div>
+                            <h1> Un projet de recherche </h1>
                             <p>
-                                Lorem Ipsum is simply dummy text of the printing and typesetting industry. 
-                                Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, 
-                                when an unknown printer took a galley of type and scrambled it to make a type 
-                                specimen book. It has survived not only five centuries, but also the leap into 
-                                electronic typesetting, remaining essentially unchanged. It was popularised in 
-                                the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, 
-                                and more recently with desktop publishing software like Aldus PageMaker including 
-                                versions of Lorem Ipsum.
+                                Les technologies DApIA sont le résultat d'un projet de recherche 
+                                du dispositif ANR ASTRID Maturation. Dans un contexte U-space et 
+                                de lutte anti-drone, l'objectif est de produire des capacités de 
+                                simulation et détection des attaques visant les données des protocoles 
+                                de surveillance dans le trafic aérien à basse altitude.
                             </p>
                         </div>
-                        <img src="./assets/chart.png" alt="" srcset="">
-                    </span>
+                        <div>
+                            <h2 class="AID"> Financé par : </h2>
+                            <img src="./assets/logo-AID.png" class="AID" alt="AID" />
+                        </div>
+                    </div>
+                    <div class="split">
+                        <!-- include svg -->
 
-                    <div>
-                        <h1> Bla bla bla </h1>
-                        <p>
-                            Lorem Ipsum is simply dummy text of the printing and typesetting industry. 
-                            Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, 
-                            when an unknown printer took a galley of type and scrambled it to make a type 
-                            specimen book. It has survived not only five centuries, but also the leap into 
-                            electronic typesetting, remaining essentially unchanged. It was popularised in 
-                            the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, 
-                            and more recently with desktop publishing software like Aldus PageMaker including 
-                            versions of Lorem Ipsum.
-                        </p>
+                        <div>
+                            <img src="./assets/flooding.png" alt="flooding" />
+                        </div>
+                        <div>
+                            <h1> Simulation des attaques </h1>
+                            <p>
+                                Grâce à un langage dédié, le composant DApIA altération permet de simuler
+                                des attaques afin d'entraîner ou de valider les modèles de détections.
+                                L'illustration montre une attaque de type ghost aircraft flooding simulée 
+                                avec le composant d'altération.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
             
         </div>
     </div>
-    <canvas id="threejs" style="top: -20vh;"></canvas>
+    <canvas id="threejs" style="top: max(-10vw, -101.0526315789px)"></canvas>
 </body>
 </html>

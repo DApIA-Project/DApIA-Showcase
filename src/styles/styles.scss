@@ -1,3 +1,31 @@
+@use 'sass:math';
+
+$vw: 1vw;
+$px: 1px;
+
+@function make-unitless($value){
+    @if (type-of($value) != number) {@return $value;}
+
+    @if (unit($value) == px) {@return math.div($value, 1px);}
+    @if (unit($value) == vw) {@return math.div($value, 1vw);}
+    @if (unit($value) == vh) {@return math.div($value, 1vh);}
+    @if (unit($value) == em) {@return math.div($value, 1em);}
+    @if (unit($value) == "%") {@return math.div($value, 1%);}
+
+    @return $value;
+}
+@function px-to-vw($px, $ratio){
+    @return math.div($px*100, $ratio) * $vw;
+}
+@function vw-to-px($vw, $ratio){
+    @return math.div($vw*$ratio, 100) * $px;
+}
+@function ratio-from-px($_px, $ratio){
+    @return min(make-unitless($_px)*$px, px-to-vw(make-unitless($_px), $ratio));
+}
+@function ratio-from-vw($_vw, $ratio){
+    @return min(make-unitless($_vw)*$vw, vw-to-px(make-unitless($_vw), $ratio));
+}
 
 
 body, html{
@@ -6,43 +34,122 @@ body, html{
     font-family: 'Dosis', sans-serif;
     font-weight: 200;
     // background-color: #f5f5f5;
-    background-color: rgb(64, 64, 64);
+    background-color: rgb(185, 185, 185);
     
 }
 *{
     color: white;
 }
 
+/* ///////////////// three js //////////////////// */
+
+
+canvas{
+    background-image: 
+        linear-gradient(
+            rgb(152, 195, 255), 
+            rgb(214, 180, 92), 
+        );
+            
+}
+
+
+/* ///////////////// HTML 3D //////////////////// */
+$html3d-max-width-total: 1000;
+$html3d-padding: 20;
+$html3d-max-width: $html3d-max-width-total - 2*$html3d-padding;
+$html3d-width: 80;
+$html3d-page-ratio: math.div($html3d-max-width,  math.div($html3d-width, 100));
+
+
+
+@function html3d-ratio-from($_px){
+    @if (unit($_px) == px) {@return ratio-from-px($_px, $html3d-page-ratio);}
+    @if (unit($_px) == vw) {@return ratio-from-vw($_px, $html3d-page-ratio);}
+    // exeption
+    @return $error "unit not supported";
+}
+
+
+
+// PAGE is at full with when width is : 920px/(80%) = 1200px
+// padding equation :
+// 1200 * (X vw)/100 = 20px
+// X = 20*100/1200
+// padding: min(1.6vw, 20px); 
+
+
 .html3d{
     position: fixed;
-    max-width: 500px;
-    width: 60vw;
-    // background-color: rgb(64, 64, 64);
-    border-radius: 1vw;
-    // box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.3);
+    max-width: html3d-ratio-from(80vw);
+    // width: 80vw; 
+    padding: html3d-ratio-from(20px);
+    text-align: center;
+    border-radius: html3d-ratio-from(15px); 
+
+    transform: translateY(10000px);
 }
 .html3d *{
     color: rgb(255, 255, 255);
 }
-.text-container{
-    text-align: center;
-    padding: 3%;
+
+
+.html3d>p{
+    margin: 0;
+    padding: 0;
+    // padding equation :
+    // 1200 * (X vw)/100 = 20px
+    // X = 20*100/1200
+    font-size: html3d-ratio-from(25px);
+    text-align: justify;
+}
+.html3d>h1{
+    margin: 0;
+    padding: 0;
+    font-size: html3d-ratio-from(40px);
+
+    margin: 0;
+    margin-bottom: html3d-ratio-from(25px);
+
+    font-weight: 200;
+    font-family: 'Abril Fatface', sans-serif;
+}
+.html3d>h2{
+    margin: 0;
+    padding: 0;
+    font-size: html3d-ratio-from(30px);
+    font-weight: normal;
+
+    margin: 0;
+    margin-bottom: html3d-ratio-from(10px);
+}
+.html3d>.flex-container{
+    width: html3d-ratio-from(80vw);
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+    align-items: center;
+
+}
+.html3d .logo{
+    width: 32%;
 }
 
-.text-container>p{
-    margin: 0;
-    padding: 0;
-    font-size: 100%;
+.html3d a{
+    border: white 2px solid;
+
+    background-color: rgb(42, 42, 42);
+
+    border-radius: html3d-ratio-from(5px);
+    font-size: html3d-ratio-from(30px);
+
+    padding: 0.2% 2%;
+    margin: 0 1%;
+    text-decoration: none;
 }
-.text-container>h1{
-    margin: 0;
-    padding: 0;
-    font-size: 200%;
-}
-.text-container>h2{
-    margin: 0;
-    padding: 0;
-    font-size: 150%;
+.html3d a:hover{
+    background-color: white;
+    color: black;
 }
 
 #threejs{
@@ -53,40 +160,8 @@ body, html{
 }
 
 
-h1{
-    font-family: 'Abril Fatface', sans-serif;
-    font-weight: 2;
-    font-size: 64px;
-    margin: 10px 0;
+/* ///////////////// FAKE PAGE //////////////////// */
 
-}
-h2{
-    font-size: 48px;
-    font-weight: 200;
-    margin: 5px 0;
-
-}
-
-p{
-    font-size: 24px;
-    font-weight: 200;
-
-    text-align: justify;
-
-}
-
-.big{
-    font-size: 80px !important;
-}
-
-canvas{
-    background-image: 
-        linear-gradient(
-            rgb(152, 195, 255), 
-            rgb(214, 180, 92), 
-        );
-            
-}
 
 #front-page{
     position: fixed;
@@ -125,14 +200,35 @@ a:hover{
     background-color: white;
     color: black;
 }
+
+$page-max-width-total: 1000;
+$page-padding: 20;
+$page-max-width: $page-max-width-total - 2*$page-padding;
+$page-width: 95;
+$page-page-ratio: math.div($page-max-width,  math.div($page-width, 100));
+
+@function page-ratio-from($_px){
+    @if (unit($_px) == px) {@return ratio-from-px($_px, $page-page-ratio);}
+    @if (unit($_px) == vw) {@return ratio-from-vw($_px, $page-page-ratio);}
+    // exeption
+    @return $error "unit not supported";
+}
+
+@debug "`max(-${vw}vw, -${vw*"+ math.div($page-page-ratio, 100)+"}px)`;";
+
+// gap to show the 3D view in the background of fake page
 .canvas{
     width: 100%;
-    height: 45vh;
+    height: calc(100vh - 60px - page-ratio-from(40vw)); 
     opacity: 0.5;
 }
+
+
+@debug "threejs canvas \"top: "+ page-ratio-from(10vw)+"\";";
+
 #content{
     width: 100%;
-    height: 55vh;
+    height: page-ratio-from(40vw); 
     
     background-color: rgb(64, 64, 64);
 
@@ -140,35 +236,74 @@ a:hover{
     display: flex;
     justify-content: center;
 
-    clip-path: polygon(0% 20%, 100% 0%, 100% 100%, 0% 100%)
-
-
+    clip-path: polygon(0% page-ratio-from(10vw), 100% 0%, 100% 100%, 0% 100%)
 }
 
 .container{
-    max-width: 1000px;
-    padding-top: 10vh;
+    
+    max-width: $page-max-width*$px;
+    width: $page-width*$vw;
+    padding: page-ratio-from(20px); 
+    padding-top: page-ratio-from(10vw + 3vw);
+    
+
 }
-.container p{
-    margin: 0;
-    padding: 0;
-    font-size: 120%;
-} 
-.container h1{
-    font-size: 300%;
-}
+
 .page{
-    width: 96%;
-    margin: 2%;
+    width: 100%;
 }
-.page>span{
+.page>div{
+    margin-bottom: 2%;
+}
+.page>.split{
     display: flex;
     width: 100%;
     justify-content: space-between;
     align-items: start;
+    flex-wrap: wrap;
 }
-.page>span>*{
-    width: 49%;
+.page>.split>*{
+    width: 48%;
+}
+
+
+// page content
+
+.page h1{
+    font-family: 'Abril Fatface', sans-serif;
+    font-weight: 200;
+    font-size: page-ratio-from(40px); 
+    margin: 0;
+    margin-bottom: page-ratio-from(10px); 
+
+}
+.page h2{
+    font-family: 'Abril Fatface', sans-serif;
+    font-weight: 200;
+    font-size: page-ratio-from(35px);
+    margin: 0;
+    margin-bottom: page-ratio-from(10px);
+}
+.page p{
+    text-align: justify;
+    font-size: page-ratio-from(20px);
+    margin: 0;
+}
+
+.page img{
+    width: 100%;
+}
+
+
+
+h2.AID{
+    text-align: center;
+    margin-bottom: page-ratio-from(25px);
+}
+img.AID{
+    background-color: rgba(255, 255, 255, 0.745);
+    width: 50%;
+    margin: 0 25%;
 }
 
 

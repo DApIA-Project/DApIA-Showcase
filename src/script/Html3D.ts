@@ -20,10 +20,12 @@ export class Html3D {
     private width: number;
     private height: number;
     private dom: HTMLElement;
+    private updated: boolean = false;
 
     constructor(html: string) {
         this.dom = document.getElementById("html3d-container")
         this.element = htmlFromString(html);
+        this.element.style.display = "none";
         document.body.appendChild(this.element);
 
         this.width = this.element.offsetWidth;
@@ -32,10 +34,20 @@ export class Html3D {
     }
 
     public update() {
+        this.updated = true;
+        var last_display = this.element.style.display;
         this.element.style.display = "block";
+        if (last_display == "none")
+        {
+            // this.element.style.left = "100%";
+            this.element.style.top = "100%";
+        }
         this.width = this.element.offsetWidth;
         this.height = this.element.offsetHeight;
-        console.log(this.width, this.height);
+
+        setTimeout(() => {
+            this.element.style.display = last_display;
+        }, 300);
         
     }
 
@@ -59,7 +71,7 @@ export class Html3D {
 
         let distance = cam_pos.distanceTo(this.position);
 
-        if (distance > 500) {
+        if (distance > 350) {
             return { position, scale: 0 };
         }
         let alpha = 1.0;
@@ -69,7 +81,9 @@ export class Html3D {
 
 
         // check if the object is in camera view
-        if (!isInCamera(camera, position)){
+        var pos = position.clone();
+        pos.y = pos.y - 10;
+        if (!isInCamera(camera, pos)){
             return { position, scale: 0 };
         }
         position.project(camera);
@@ -79,15 +93,18 @@ export class Html3D {
         position.x = (position.x + 1) / 2 * window.innerWidth - this.width / 2;
         position.y = (-position.y + 1) / 2 * window.innerHeight - this.height / 2;
 
-        var scale = 70.0 / distance
-
-
+        var scale = 70.0 / distance / 1.26233754617
+        
+        if (this.position.z <= 10) {
+            scale = 1.0;
+        }
 
         return { position, scale, alpha };
     }
 
 
     public render(camera: THREE.Camera) {
+        if (!this.updated) return;
         let { position, scale, alpha } = this.computePositionInWorldSpace(camera);
         if (scale == 0) {
             this.element.style.display = 'none';
@@ -101,19 +118,22 @@ export class Html3D {
         var top = canvas.style.top
         
 
-        var a = (this.position.z - 150) / (10 - 150) * (0.8 - 0) + 0;    
-        console.log(this.position.z, a);
-            
+        var a = (this.position.z - 150) / (10 - 150) * (0.8 - 0) + 0;   
         this.alpha(a);
         
+        
+        if (this.position.z > 10)
+            this.element.style.left = position.x + 'px';
+        else
+            // windows.innerWidth
+            this.element.style.left = window.innerWidth / 2 - this.width / 2 + 'px';
 
-        this.element.style.left = position.x + 'px';
         if (top != "")
             this.element.style.top = "calc("+position.y + 'px + '+top+")";
         else
             this.element.style.top = position.y + 'px';
-        this.element.style.transform = 'scale(' + scale + ')';
+        
+        this.element.style.transform = 'scale(' + scale + ') translateY(0%) ';
         this.element.style.opacity = alpha.toString();
-
     }
 }

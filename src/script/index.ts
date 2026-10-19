@@ -3,8 +3,69 @@ import * as THREE from 'three';
 import { LightProbeGenerator } from './threeAddons/lights/LightProbeGenerator.js';
 import { Mountain } from './mountain';
 import { OBJLoader } from './threeAddons/loaders/OBJLoarder';
+import { FBXLoader } from './threeAddons/loaders/FBXLoader';
+import { MTLLoader } from './threeAddons/loaders/MTLLoader';
+import { GLTFLoader } from './threeAddons/loaders/GLTFLoader';
 import { Html3D } from './Html3D';
-import { modulo, rgb2hex } from './utils';
+import { im_setPosition, modulo, rgb2hex } from './utils';
+
+const logo_fem = require("../assets/logo-fem.svg");
+const logo_onera = require("../assets/logo-onera.svg");
+const logo_smart = require("../assets/logo-smart.svg");
+
+const PAGES_POS = [
+    0, 500, 1000, 1500, 2000, 2500
+]
+const HTML_PAGES = [
+    `
+        <h1> Projet DAPIA </h1>
+        <h2> Détection d'attaques par injection de fausses données  </h2>
+        <h2> dans la surveillance du trafic aérien civil et militaire </h2>
+    `,
+    `
+        <h1> Simulation des attaques </h1>
+        <p>
+            Grâce à un langage dédié, le composant DApIA altération permet de simuler des attaques afin d'entraîner ou de valider les modèles de détections.
+            L'illustration montre une attaque de type ghost aircraft flooding simulée avec le composant d'altération.
+        </p>
+    `,
+    `
+        <h1> Détection des attaques </h1>
+        <p>
+            À l'heure actuelle, la bibliothèque de modèles DApIA permet de détecter certains types d'attaques telles que les spoofing, ghost aircraft flooding, replay attack ou la modification de trajectoire.
+            Par exemple ici un drone essaie de se faire passer pour un helicoptère de secours.
+        </p>
+    `,
+    `
+        <h1> Trafic basse altitude </h1>
+        <p>
+            Les modèles de détection sont spécifiquement entraînés pour le contexte du trafic à basse altitude : hélicoptères du SAMU, drones, eVTOL, etc.
+            L'illustration montre les départs des taxis aériens de Monaco vers Nice représentatifs d'un futur trafic dense et cadencé à basse altitude (UAM).
+        </p>
+    `,
+    `
+        <h1> Déploiement simplifié </h1>
+        <p>
+            Livrés sous forme d'applications et d'API web conteneurisées, les composants DApIA sont facilement déployables on-premise. Les composants sont disponibles sur Docker Hub.
+        </p>
+    `,
+    `
+        <h1> Notre équipe </h1>
+        <div class="flex-container">
+            <img src="${logo_fem}" class="logo" alt="Femto-ST" />
+            <img src="${logo_onera}" class="logo" alt="ONERA" />
+            <img src="${logo_smart}" class="logo" alt="Smartesting" />
+        </div>
+        <div class="flex-container">
+            <a href="mailto:aymeric.cretin@smartesting.com">
+                Nous contacter
+            </a>
+            <a href="https://github.com/DApIA-Project" target="_blank">
+                GitHub
+            </a>
+        </div>
+    `,
+]
 
 
 
@@ -23,11 +84,73 @@ const GROUND_SAMPLES = 1; // pts per unit
 const GROUND_SIZE_W = GROUND_WIDTH * GROUND_SAMPLES;
 const GROUND_SIZE_L = GROUND_LENGHT * GROUND_SAMPLES;
 
-const plane_model = require("../assets/LP_Airplane.obj");
+const plane = require("../assets/plane.gltf");
+const helco = require("../assets/helico.gltf");
+const drone = require("../assets/drone.gltf");
+const plane2 = require("../assets/plane2.gltf");
+
+const helico_traj = [
+    {x:400, y:4, z:1000, when:1000},
+    {x:15, y:4, z:1505, when:1480}
+]
+
+const drone_traj = [
+    {x:-200, y:10, z:500, when:500},
+    {x:10, y:10, z:1000, when:1000}
+]
+
+const plane2_traj = [
+    {x:200, y:3, z:300, when:0},
+    {x:40, y:3, z:470, when:390}
+]
+
+
+
+
+const textures =  {
+    "/textures/plane_paint_3.png": require("../assets/textures/plane_paint_3.png"),
+    "/textures/plane_paint_5.png": require("../assets/textures/plane_paint_5.png"),
+    "/textures/plane_paint_2.png": require("../assets/textures/plane_paint_2.png"),
+
+    "/textures/interior2.png": require("../assets/textures/interior2.png"),
+    "/textures/texture.png": require("../assets/textures/texture.png"),
+    "/textures/mainrotor.png": require("../assets/textures/mainrotor.png"),
+    "/textures/tailrotor.png": require("../assets/textures/tailrotor.png"),
+
+    "/textures/interior.png": require("../assets/textures/interior.png"),
+    "/textures/texture_2.png": require("../assets/textures/texture_2.png"),
+
+    "/plane.bin":  require("../assets/plane.bin"),
+    "/helico.bin": require("../assets/helico.bin"),
+    "/drone.bin": require("../assets/drone.bin"),
+    "/plane2.bin": require("../assets/plane2.bin"),
+}
+
+
+
+function setLinearFilter(object){
+    object.castShadow = true;
+    object.traverse((child) => {
+        if (child instanceof THREE.Mesh){
+            child.castShadow = true;
+            child.receiveShadow = false;
+            if (child.material.map){
+                child.material.map.minFilter = THREE.LinearFilter;
+            }
+        }
+    });
+    return object;
+}
+
+
 
 
 const MAX_SPEED  = 170.0/10.0;
 const ACCERATION =  20.0/10.0;
+
+const ANIME_MENU_SCROLL = 250;
+const TEXTS_HEIGHT = 20;
+const TEXTS_TARGET_HEIGHT = 30;
 
 class app{
 
@@ -41,6 +164,15 @@ class app{
 
     mountain:Mountain;
     plane:THREE.Object3D;
+    PLANE_SHIFT = 20;
+    actual_plane_shift = 20;
+    helico:THREE.Object3D;
+    helico_a = Math.PI/2;
+    drone:THREE.Object3D;
+    drone_a = 0;
+    show_spoofing = false;
+    plane2:THREE.Object3D;
+    plane2_a =  Math.PI/2;
 
 
     texts:Html3D[] = [];
@@ -54,6 +186,8 @@ class app{
 
     main_title = true;
 
+    step = 0;
+
 
 
     init() {
@@ -62,8 +196,8 @@ class app{
         // this.scene.background = new THREE.Color(rgb2hex(169, 199, 201));
 
         this.view = new THREE.PerspectiveCamera(VIEW.fov, window.innerWidth / window.innerHeight, VIEW.near, VIEW.far);
-        this.view.position.z = -50;
-        this.view.position.y = 15;
+        this.view.position.z = -45;
+        this.view.position.y = 25;
         this.view.position.x = 5;
         this.view.lookAt(0, 10, 0);
 
@@ -97,10 +231,10 @@ class app{
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.toneMapping = THREE.ReinhardToneMapping;
         this.renderer.toneMappingExposure = 1.2;
-        
+
         // document.body.appendChild(this.renderer.domElement);
 
-        
+
         this.mountain = new Mountain(GROUND_WIDTH, GROUND_LENGHT);
         this.mountain.setPosition(0, -40, 0);
 
@@ -111,36 +245,94 @@ class app{
             }
         });
 
-        const objLoader = new OBJLoader();
-        objLoader.load(plane_model, (object) => {
-            // rotate 90 degrees
-            object.rotation.y = -Math.PI/2;
-            object.scale.set(6, 6, 6);
-            this.plane = object;
-            // this.plane.castShadow = true;
-            for (let i = 0; i < this.plane.children.length; i++) {
-                this.plane.children[i].castShadow = true;
-                this.plane.children[i].receiveShadow = true;
-            }
-            
+        const loadingManager = new THREE.LoadingManager();
+        loadingManager.setURLModifier( function( url ) {
+            if (url.startsWith(".")) url = url.substring(1);
+
+            var res = textures[url];
+            if (res) return res;
+
+            return url;
+        } );
+        const gltfLoader = new GLTFLoader(loadingManager);
+
+        gltfLoader.load(plane,  (object) => {
+            this.plane  = object.scene;
+
+            this.plane.scale.set(1.2, 1.2, 1.2);
+            this.plane.position.z = -20 + this.actual_plane_shift;
+            this.plane.position.y = 5.8;
+            this.plane.rotation.y = Math.PI/2;
+
+            this.plane.children[7].children[4].material.color = new THREE.Color(rgb2hex(184, 229, 255));
+            this.plane.children[3].material.color = new THREE.Color(rgb2hex(184, 229, 255));
+
+            setLinearFilter(this.plane);
             this.scene.add(this.plane);
         });
 
-        
+
+        gltfLoader.load(helco,  (object) => {
+            this.helico  = object.scene;
+
+            this.helico.scale.set(2, 2, 2);
+            this.helico.rotation.y = this.helico_a;
+
+            setLinearFilter(this.helico);
+            this.scene.add(this.helico);
+        });
 
 
-        var title = new Html3D('<div class="text-container"> <h1> Projet DAPIA </h1> <h2> Sécuriser le contrôle du traffic aérien </h2> <div>'); //<span class="material-icons-outlined big"> south </span> 
-        title.setPosition(0, 20, 10);
-        this.texts.push(title);
+        gltfLoader.load(drone,  (object) => {
+            this.drone  = object.scene;
 
-        for (let i = 1; i < 5; i++) {
-            var paragraph = new Html3D('<div class="text-container"> <h1> Lorem ipsum dolor sit amet </h1> <p> Consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum </p> <div>');
-            paragraph.setPosition(0, 20, i * 500 + 10);
-            this.texts.push(paragraph);
+            this.drone.scale.set(0.8, 0.8, 0.8);
+
+            setLinearFilter(this.drone);
+            this.scene.add(this.drone);
+        });
+
+        gltfLoader.load(plane2,  (object) => {
+            this.plane2  = new THREE.Object3D();
+
+            object.scene.traverse((child) => {
+                if (child instanceof THREE.Mesh){
+                    var geometry = child.geometry;
+                    var material = child.material;
+                    var mesh = new THREE.InstancedMesh(geometry, material, 5);
+                    mesh.count = 1;
+                    for (let i = 0; i < 5; i++) {
+                        mesh.setMatrixAt(i, new THREE.Matrix4().setPosition(new THREE.Vector3(0, 0, 0)));
+                    }
+                    this.plane2.add(mesh);
+                }
+
+            });
+
+            this.plane2.scale.set(0, 0, 0);
+
+
+            setLinearFilter(this.plane2);
+            this.scene.add(this.plane2);
+
+        });
+
+
+        for (let i = 0; i < HTML_PAGES.length; i++) {
+            var text = new Html3D(HTML_PAGES[i]);
+            this.texts.push(text);
         }
 
 
-        
+
+        this.forward(0);
+
+        // view init !
+        setTimeout(() => {
+            this.resize(null);
+        }, 500);
+
+
         setInterval(()=>{
             this.frame()
             for (let i = 0; i < this.texts.length; i++) {
@@ -148,32 +340,167 @@ class app{
             }
             this.render()
         }, 1000.0/FRAME_RATE);
+
+
+        // setInterval(() => {
+        //     this.auto_run()
+        // }, 10000);
+    }
+
+    auto_run(){
+        if(this.step <= 5){
+            this.zoom(150)
+        }
+        else{
+            this.zoom(-150)
+        }
+
+        this.step ++;
+        if (this.step > 10){
+            this.step = 0;
+        }
+    }
+
+    lerp_traj(param){
+
+        // helico target pos
+        var start_pos = new THREE.Vector3(param[0].x, param[0].y, param[0].z);
+        var start_when = param[0].when;
+        var target_pos = new THREE.Vector3(param[1].x, param[1].y, param[1].z);
+        var target_when = param[1].when;
+        var teta =  Math.atan2(target_pos.x - start_pos.x, target_pos.z - start_pos.z, );
+
+        var pos = new THREE.Vector3();
+        var t = (this.scoll_offset - start_when) / (target_when - start_when);
+        pos.x = start_pos.x + (target_pos.x - start_pos.x) * t;
+        pos.y = start_pos.y + (target_pos.y - start_pos.y) * t;
+        pos.z = start_pos.z + (target_pos.z - start_pos.z) * t - this.scoll_offset;
+
+        return [pos, teta, t];
     }
 
     frame(){
         var t = new Date().getTime() / 1000.0;
         if (this.scoll_offset > 80){
-            this.plane.position.y = Math.cos(t*1.5) * 0.25;
+            this.plane.position.y = Math.cos(t*1.5) * 0.25 + 5.8;
+            this.plane.children[1].rotation.x += 0.2;
+
+            this.plane.position.z = -20 + this.actual_plane_shift;
+
+
+            this.helico.children[6].rotation.z += 0.15;
+            this.helico.children[23].rotation.y += 0.25;
+
+            this.drone.children[5].rotation.y += 0.5;
+            this.drone.children[4].rotation.y -= 0.5;
+            this.drone.children[3].rotation.y -= 0.5;
+            this.drone.children[2].rotation.y += 0.5;
         }
+
+        var lerp = undefined;
+        if (this.helico){
+            lerp = this.lerp_traj(helico_traj);
+            this.helico.position.copy(lerp[0]);
+            this.helico.rotation.y = lerp[1] + this.helico_a;
+
+
+
+
+            lerp = this.lerp_traj(drone_traj);
+            if (lerp[2] > 0.8 && lerp[2] < 1.1){
+                if (Math.random() > 0.9){
+                    this.show_spoofing = !this.show_spoofing;
+                }
+            }
+            else this.show_spoofing = false;
+
+            if (this.show_spoofing){
+                this.helico.position.copy(lerp[0]);
+                this.helico.rotation.y = lerp[1] + this.helico_a;
+                this.drone.position.z = -1000;
+            }
+            else{
+                this.drone.position.copy(lerp[0]);
+                this.drone.rotation.y = lerp[1] + this.drone_a;
+            }
+
+            lerp = this.lerp_traj(plane2_traj);
+            var t_inter = lerp[2];
+            if (t_inter > 0){
+                if (this.plane2.scale.x < 1) this.plane2.scale.set(3, 3, 3);
+                this.plane2.position.copy(new THREE.Vector3(0, 0, 0));
+                this.plane2.rotation.y = 0;
+
+                for (let ch = 0; ch < this.plane2.children.length; ch++) {
+                    var child:THREE.InstancedMesh = this.plane2.children[ch] as THREE.InstancedMesh;
+                    child.count = 5;
+
+
+                    var pos = new THREE.Vector3().copy(lerp[0]);
+                    var origin = plane2_traj[1];
+                    var t_o = new THREE.Vector3(plane2_traj[0].x, plane2_traj[0].y, plane2_traj[0].z);
+                    var t_d = new THREE.Vector3().copy(origin);
+
+                    for (let i = 0; i < child.count; i++) {
+                        var d= i/4;
+                        var r = 0;
+                        if (t_inter > 1){
+                            r = d * Math.PI / 2.0 - Math.PI/4.0;
+                        }
+
+                        var pos = new THREE.Vector3(
+                            lerp[0].x,
+                            lerp[0].y,
+                            lerp[0].z + this.scoll_offset,
+                        );
+
+                        pos.sub(t_d);
+                        pos.applyAxisAngle(new THREE.Vector3(0, 1, 0), r);
+                        pos.add(t_d);
+                        pos.z -= this.scoll_offset;
+                        pos.multiplyScalar(1/3.0)
+
+
+                        var mat = new THREE.Matrix4().makeRotationY(this.plane2_a + lerp[1] + r);
+                        mat.setPosition(pos);
+
+                        if (this.scoll_offset > 80 && ch == 5){
+                            mat.setPosition(pos.x+Math.sin(r+ lerp[1]) * 3.1, pos.y+0.2, pos.z + Math.cos(r+ lerp[1]) * 3.1);
+                            mat.multiply(new THREE.Matrix4().makeRotationX(t*6));
+                        }
+                        child.setMatrixAt(i, mat);
+
+                    }
+                    child.instanceMatrix.needsUpdate = true;
+                }
+            }
+        }
+
+
 
         var scoll_interval = modulo(this.scoll_offset, 500);
         var scoll_region = Math.floor((this.scoll_offset+200) / 500) * 500;
-        
-        
+
+        // this.scroll_momentum = 1
+
         // if we are in the middle of two pages : fast scroll
-        if ((scoll_interval > 150 && scoll_interval < 450))
+        if ((scoll_interval > 150 && scoll_interval < 300))
         {
             this.skipping = true;
-            this.scroll_momentum += this.move_forward * ACCERATION;
-            if (Math.abs(this.scroll_momentum) > MAX_SPEED){
-                this.scroll_momentum = MAX_SPEED * this.move_forward;
-            }
+            // this.scroll_momentum += this.move_forward * ACCERATION;
+            // if (Math.abs(this.scroll_momentum) > MAX_SPEED){
+            //     this.scroll_momentum = MAX_SPEED * this.move_forward;
+            // }
         }
-        
+
         // if we get out of a skip zone, we must slow down !
         else if (this.skipping){
-            // activate air resistance
             this.stop_skipping = true;
+
+            if (this.scroll_momentum > 3){
+                this.scroll_momentum *= 0.8;
+            }
+
 
             // manage perfect stop
             if (this.move_forward > 0){
@@ -193,7 +520,7 @@ class app{
             }
         }
 
-        
+
         if (Math.abs(this.scroll_momentum) > 0.1){
             this.forward(this.scroll_momentum);
         }
@@ -201,15 +528,6 @@ class app{
             this.scroll_momentum = 0;
             this.skipping = false;
             this.stop_skipping = false;
-        }
-
-        // apply the down force
-        if (this.skipping){
-            if (!this.stop_skipping) this.scroll_momentum *= 1.0;
-            else this.scroll_momentum *= 0.90;
-        }
-        else{
-            this.scroll_momentum *= 0.75;
         }
 
         this.mountain.update(this.scoll_offset);
@@ -231,39 +549,24 @@ class app{
             this.scroll_momentum = -MAX_SPEED;
         }
 
-        if (this.move_forward < 0){
-            if (this.scoll_offset + scoll <= 250){
-
-                if (!this.main_title){
-                    this.main_title = true;
-                    this.anime_in();
-                }
-            }
-        } else {
-            if (this.scoll_offset + scoll > 0){
-                if (this.main_title){
-                    this.main_title = false;
-                    this.anime_out();
-                }
-            }
-        }
+        // limit scroll the page counts
         if (this.scoll_offset + scoll < 0){
-            scoll = -this.scoll_offset;
+            scoll = 0-this.scoll_offset;
+        }
+        else if (this.scoll_offset + scoll > 500*(HTML_PAGES.length-1)){
+            scoll = 500*(HTML_PAGES.length-1) - this.scoll_offset;
         }
 
         this.scoll_offset += scoll;
-        this.mountain.shift_noise(scoll);
 
-        for (let i = 0; i < this.texts.length; i++) {
-            let z = i*500 + 10 - this.scoll_offset;
-            if (z > 10){
-                this.texts[i].setPosition(0, 20, 10+ i*500 - this.scoll_offset);
-            }
-            else{
-                this.texts[i].setPosition(0, 20 + (-i * 500 + this.scoll_offset) * 0.07, 10);
-            }
+
+
+
+        this.anime_menu();
+        this.anime_texts();
+        if (speed != 0){
+            this.mountain.shift_noise(scoll);
         }
-
     }
 
 
@@ -305,123 +608,88 @@ class app{
             this.mouse.x = event.clientX;
             this.mouse.y = event.clientY;
         }
-        
+
     }
 
-    zoom(event){
-        var speed = event.deltaY;
-        this.scroll_momentum = speed / 5.0;
+    zoom(deltaY){
+        this.scroll_momentum = deltaY / 5.0;
     }
 
-    anime_out(){
+
+    anime_texts(){
+        for (let i = 0; i < this.texts.length; i++) {
+            var target = TEXTS_TARGET_HEIGHT;
+            if (i == 0) target = TEXTS_HEIGHT;
+
+            let z = PAGES_POS[i] - this.scoll_offset;
+            if (z > 10){
+                var y = TEXTS_HEIGHT * (z/500) + target * (1 - z/500);
+
+                this.texts[i].setPosition(0, y, z);
+            }
+            else{
+                this.texts[i].setPosition(0, target - z * 0.07, 10);
+            }
+        }
+    }
+
+    anime_menu(){
         var header = document.getElementById('header');
         var content = document.getElementById('content');
         var canvas = document.getElementById('threejs');
 
         var header_target = -header.offsetHeight;
         var content_target = content.offsetHeight;
-        var canvas_target = 0; //vh
+        var canvas_target = 0; //vw
 
         var header_origin = 0;
         var content_origin = 0;
-        var canvas_origin = -20;
+        var canvas_origin = -10;
 
-        var header_pos = header_origin;
-        var content_pos = content_origin;
-        var canvas_pos = -canvas_origin;
+        var r = this.scoll_offset / ANIME_MENU_SCROLL;
 
-        var duration = 600;
-        var t = 0;
+        if (r >= 1){
+            // header.style.display = 'none';
+            // content.style.display = 'none';
+            header.style.top = `${header_target}px`;
+            content.style.top = `${content_target}px`;
+            canvas.style.top = `max(${canvas_target}vw, ${canvas_target*10.1052631579}px)`;
 
+            return;
+        }
 
+        // lerp
+        var header_pos =  header_origin + (header_target - header_origin) * r;
+        var content_pos = content_origin + (content_target - content_origin) * r;
+        var canvas_pos = canvas_origin + (canvas_target - canvas_origin) * r;
 
-        var interval = undefined;
-        interval = setInterval(()=>{
-            t += 1000.0/FRAME_RATE;
+        this.actual_plane_shift = this.PLANE_SHIFT * (1.0 - r);
 
-            // lerp
-            header_pos = header_origin + (header_target - header_origin) * t/duration;
-            content_pos = content_origin + (content_target - content_origin) * t/duration;
-            canvas_pos = canvas_origin + (canvas_target - canvas_origin) * t/duration;
+        header.style.top = header_pos + "px";
+        content.style.top = content_pos + "px";
+        canvas.style.top = `max(${canvas_pos}vw, ${canvas_pos*10.1052631579}px)`;
 
-            header.style.top = header_pos + "px";
-            content.style.top = content_pos + "px";
-            canvas.style.top = canvas_pos + "vh";
-
-
-            this.scroll_momentum = MAX_SPEED;
-
-            if (t >= duration){
-                clearInterval(interval);
-                canvas.style.top = canvas_target + "vh";
-                
-                header.style.top = header_target + "px";
-                content.style.top = content_target + "px";
-
-                header.style.display = 'none';
-                content.style.display = 'none';
-            }
-
-        }, 1000.0/FRAME_RATE);
-    }
-
-    anime_in(){
-        var header = document.getElementById('header');
-        var content = document.getElementById('content');
-        var canvas = document.getElementById('threejs');
-
-        var header_target = 0;
-        var content_target = 0;
-        var canvas_target = -20; //vh
-
-        var header_origin = parseInt(header.style.top);
-        var content_origin = parseInt(content.style.top);
-        var canvas_origin = 0;
-
-        var header_pos = header_origin;
-        var content_pos = content_origin;
-        var canvas_pos = -canvas_origin;
-
-        var duration = 600;
-        var t = 0;
-
-        header.style.display = 'flex';
-        content.style.display = 'flex';
-
-        var interval = undefined;
-        interval = setInterval(()=>{
-            t += 1000.0/FRAME_RATE;
-
-            // lerp
-            header_pos = header_origin + (header_target - header_origin) * t/duration;
-            content_pos = content_origin + (content_target - content_origin) * t/duration;
-            canvas_pos = canvas_origin + (canvas_target - canvas_origin) * t/duration;
-
-            header.style.top = header_pos + "px";
-            content.style.top = content_pos + "px";
-            canvas.style.top = canvas_pos + "vh";
-
-            if (t >= duration){
-                clearInterval(interval);
-                canvas.style.top = canvas_target + "vh";
-                
-                header.style.top = header_target + "px";
-                content.style.top = content_target + "px";
-            }
-
-        }, 1000.0/FRAME_RATE);
+        if (r < 1){
+            // header.style.display = 'flex';
+            // content.style.display = 'flex';
+        }
     }
 
 
 
-    
     resize(event){
         for (let i = 0; i < this.texts.length; i++) {
             this.texts[i].update();
         }
         this.view.aspect = window.innerWidth / window.innerHeight;
+        if (window.innerWidth < 450){
+            this.view.fov = 90;
+        } else {
+            this.view.fov = VIEW.fov;
+        }
         this.view.updateProjectionMatrix();
         this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.frame();
     }
 }
 
@@ -432,26 +700,40 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // right mouse button
-// document.addEventListener('contextmenu', (event) => {
-//     event.preventDefault();
-// });
-// document.addEventListener('mousedown', (event) => {
-//     if(event.button == 2){
-//         a.right_pressed(event);
-//     }
-// });
-// document.addEventListener('mouseup', (event) => {
-//     if(event.button == 2){
-//         a.right_released();
-//     }
-// });
+document.addEventListener('contextmenu', (event) => {
+    event.preventDefault();
+});
+document.addEventListener('mousedown', (event) => {
+    // if(event.button == 2){
+    //     a.right_pressed(event);
+    // }
+});
+document.addEventListener('mouseup', (event) => {
+    // if(event.button == 2){
+    //     a.right_released();
+    // }
+});
 document.addEventListener('mousemove', (event) => {
     a.mouse_move(event);
 });
 document.addEventListener('wheel', (event) => {
-    a.zoom(event);
-    // a.forward(40*event.deltaY/120);
+    a.zoom(event.deltaY);
 });
+
+var last_position_y = -1;
+document.addEventListener("touchmove", (event)=>{
+    if (last_position_y == -1){
+        last_position_y = event.touches[0].clientY;
+    }
+    a.zoom(-(event.touches[0].clientY - last_position_y) * 4);
+    last_position_y = event.touches[0].clientY;
+
+});
+document.addEventListener("touchend", (event)=>{
+    last_position_y = -1;
+
+});
+
 
 window.addEventListener("resize", (event)=>{
     a.resize(event);

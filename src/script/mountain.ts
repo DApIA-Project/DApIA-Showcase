@@ -4,7 +4,7 @@ import { Noise2D, genSeed, multiLayeredNoise } from './noise';
 import { FBXLoader } from './threeAddons/loaders/FBXLoader';
 
 import * as THREE from 'three';
-import { genColorArray, rgb2hex } from './utils';
+import { genColorArray, rgb2hex, im_getPosition, im_getX, im_getY, im_getZ, im_setPosition, im_setX, im_setY, im_setZ } from './utils';
 
 const SAMPLES = 1/4; // pts per unit
 
@@ -12,36 +12,6 @@ function sfloor(x, n){
     return Math.floor(x / n) * n;
 }
 
-function im_getPosition(instanced_mesh:THREE.InstancedMesh, i:number):THREE.Vector3{
-    return new THREE.Vector3(
-        instanced_mesh.instanceMatrix.array[i*16+12],
-        instanced_mesh.instanceMatrix.array[i*16+13],
-        instanced_mesh.instanceMatrix.array[i*16+14]);
-}
-function im_getX(instanced_mesh:THREE.InstancedMesh, i:number):number{
-    return instanced_mesh.instanceMatrix.array[i*16+12];
-}
-function im_getY(instanced_mesh:THREE.InstancedMesh, i:number):number{
-    return instanced_mesh.instanceMatrix.array[i*16+13];
-}
-function im_getZ(instanced_mesh:THREE.InstancedMesh, i:number):number{
-
-    return instanced_mesh.instanceMatrix.array[i*16+14];
-}
-function im_setPosition(instanced_mesh:THREE.InstancedMesh, i:number, pos):void{
-    instanced_mesh.instanceMatrix.array[i*16+12] = pos.x;
-    instanced_mesh.instanceMatrix.array[i*16+13] = pos.y;
-    instanced_mesh.instanceMatrix.array[i*16+14] = pos.z;
-}
-function im_setX(instanced_mesh:THREE.InstancedMesh, i:number, x:number):void{
-    instanced_mesh.instanceMatrix.array[i*16+12] = x;
-}
-function im_setY(instanced_mesh:THREE.InstancedMesh, i:number, y:number):void{
-    instanced_mesh.instanceMatrix.array[i*16+13] = y;
-}
-function im_setZ(instanced_mesh:THREE.InstancedMesh, i:number, z:number):void{
-    instanced_mesh.instanceMatrix.array[i*16+14] = z;
-}
 
 
 
@@ -83,6 +53,7 @@ const cloud_models = [
 ];
 
 export class Mountain{
+    ready = false;
 
     width: number;
     length: number;
@@ -106,7 +77,7 @@ export class Mountain{
 
 
 
-    mesh_loaded = -6
+    mesh_loaded = -5
     _onLoad_
 
     debug_mesh:THREE.InstancedMesh;
@@ -142,7 +113,7 @@ export class Mountain{
         this.floor.receiveShadow = true;
         this.floor.castShadow = false;
 
-        this.add_mesh_loaded()
+        
 
         var s = new THREE.SphereGeometry(0.1, 8, 4);
         var m = new THREE.MeshBasicMaterial({color: 0xff0000});
@@ -150,10 +121,10 @@ export class Mountain{
     
 
         var trajectoryGeometry = new THREE.PlaneGeometry(0.5, 400, 1, 1);  
-        trajectoryGeometry.attributes.position.setXYZ(0, 0.2, 5, -15); 
-        trajectoryGeometry.attributes.position.setXYZ(1, -0.2, 5, -15);
-        trajectoryGeometry.attributes.position.setXYZ(2, 0.15, 5, -40);
-        trajectoryGeometry.attributes.position.setXYZ(3, -0.15, 5, -40);        
+        trajectoryGeometry.attributes.position.setXYZ(0, 0.2, 5, -10); 
+        trajectoryGeometry.attributes.position.setXYZ(1, -0.2, 5, -10);
+        trajectoryGeometry.attributes.position.setXYZ(2, 0.15, 5, -140);
+        trajectoryGeometry.attributes.position.setXYZ(3, -0.15, 5, -140);        
         trajectoryGeometry.setAttribute('color', genColorArray(new THREE.Color(rgb2hex(44, 44, 184)), trajectoryGeometry.attributes.position.count));
 
         var trajectoryMaterial = new THREE.MeshBasicMaterial({ side: THREE.FrontSide, vertexColors: true });
@@ -174,10 +145,8 @@ export class Mountain{
             var t = new Date().getTime() / 1000.0;
             // this.plane.position.y = Math.cos(t*1.5) * 0.25;
             var y = Math.cos(t* 1.5) * 0.25;
-            this.trajectory.geometry.attributes.position.setXYZ(0, 0.2, 5 + y, -15);
-            this.trajectory.geometry.attributes.position.setXYZ(1, -0.2, 5 + y, -15);
-            // this.trajectory.geometry.attributes.position.setXYZ(2, 0.15, 5 + y, -40);
-            // this.trajectory.geometry.attributes.position.setXYZ(3, -0.15, 5 + y, -40);
+            this.trajectory.geometry.attributes.position.setXYZ(0, 0.2, 5 + y, -10);
+            this.trajectory.geometry.attributes.position.setXYZ(1, -0.2, 5 + y, -10);
 
             this.trajectory.geometry.attributes.position.needsUpdate = true;
         }
@@ -483,6 +452,7 @@ export class Mountain{
 
             this.trees = [object0, object1];
             this.add_mesh_loaded()
+            
         });
     }
 
@@ -502,6 +472,7 @@ export class Mountain{
                 // im_setPosition(object0, 0, new THREE.Vector3(Math.random()*60-30, 30, Math.random()*60-30));
                 this.clouds.push(object0);
                 this.add_mesh_loaded()
+                console.log("ok");
             });
         }
     }
@@ -555,9 +526,11 @@ export class Mountain{
 
     private add_mesh_loaded(){
         this.mesh_loaded +=1
+        
         if (this.mesh_loaded == 0){
-            this._onLoad_()
+            this.ready = true;
             this.computeMoutainModel()
+            this._onLoad_()
         }
 
     }
